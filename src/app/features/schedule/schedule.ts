@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ChallengeStore } from '../../core/services/challenge-store';
-import { Challenge, ChallengeDraft } from '../../core/models/challenge';
+import { Challenge, ChallengeDraft, GAME_LABELS, gameOf } from '../../core/models/challenge';
 import { ChallengeEditor } from '../challenge-editor/challenge-editor';
 
 const MODE_LABELS: Record<string, string> = {
@@ -32,6 +32,15 @@ export class Schedule {
 
   protected readonly modeLabels = MODE_LABELS;
   protected readonly statusLabels = STATUS_LABELS;
+
+  // League challenges show their mode; challenges from an optional game show
+  // the game name, since 'custom' would be meaningless for all of them.
+  protected badgeFor(challenge: Challenge): string {
+    const game = gameOf(challenge);
+    return game === 'league'
+      ? (MODE_LABELS[challenge.mode] ?? challenge.mode)
+      : GAME_LABELS[game];
+  }
 
   protected openCreate(): void {
     this.editingChallenge.set(null);

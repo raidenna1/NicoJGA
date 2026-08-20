@@ -6,10 +6,28 @@
 .dashboard {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  gap: 2rem;
   padding: 2rem;
   position: relative;
+  overflow-y: auto;
+}
+
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+// Bonus challenges sit alongside the active challenge, not below it, so they
+// stay visible while a challenge is running.
+@media (max-width: 900px) {
+  .dashboard {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .challenge-card {
@@ -121,6 +139,28 @@ h1 {
   background: radial-gradient(circle at center, #3a0f0a 0%, #150403 80%);
 }
 
+.overlay-game {
+  background: radial-gradient(circle at center, #0a2a3a 0%, #030f15 80%);
+}
+
+.overlay-game .overlay-label {
+  color: var(--color-teal);
+}
+
+.overlay-gate {
+  background: radial-gradient(circle at center, #2a2410 0%, #120f04 80%);
+}
+
+.overlay-gate .overlay-label {
+  color: var(--color-gold-bright);
+}
+
+.gate-question {
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
 .overlay-success {
   background: radial-gradient(circle at center, #0f3a1f 0%, #041505 80%);
 }
@@ -156,4 +196,141 @@ h1 {
   to {
     opacity: 1;
   }
+}
+
+.gate-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.side-column {
+  flex: 0 0 300px;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.panel {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .side-column {
+    flex: 1 1 auto;
+    align-self: stretch;
+    position: static;
+    width: min(700px, 100%);
+  }
+}
+
+.active-panel {
+  border-color: var(--color-gold-bright);
+}
+
+.effect-heading {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.effect-heading.punishment {
+  color: var(--color-danger);
+}
+
+.effect-heading.reward {
+  color: var(--color-success);
+}
+
+.effect-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.effect-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.effect-item .btn {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.bonus-panel h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--color-gold-bright);
+}
+
+.bonus-count {
+  margin: 0.25rem 0 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-teal);
+}
+
+.bonus-panel .hint {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.bonus-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.bonus-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: background 0.15s ease;
+}
+
+.bonus-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bonus-item input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--color-teal);
+  flex-shrink: 0;
+}
+
+.bonus-item.done span {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.bonus-list .empty {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
 }

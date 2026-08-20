@@ -1,4 +1,5 @@
 <div class="dashboard">
+  <div class="dashboard-main">
   @if (current(); as challenge) {
     <div class="challenge-card">
       <span class="mode-badge">{{ modeLabel() }}</span>
@@ -40,31 +41,172 @@
         <p>Keine aktive Challenge.</p>
         <button type="button" class="btn primary" (click)="startNext()">Nächste Challenge starten</button>
       } @else {
-        <p>🎉 Alle Challenges gespielt!</p>
-        <p class="hint">Neue Challenge im Zeitplan-Tab anlegen.</p>
+        <p>🎉 Alles gespielt!</p>
+        <div class="gate-controls">
+          <button type="button" class="btn primary" (click)="openGameWheel()">
+            🎲 Game-Rad drehen
+          </button>
+        </div>
+        <p class="hint">Oder neue Challenges im Zeitplan-Tab anlegen.</p>
       }
     </div>
+  }
+  </div>
+
+  @if (activeStore.hasEffects() || showBonusPanel()) {
+  <aside class="side-column">
+
+  @if (activeStore.hasEffects()) {
+  <section class="panel active-panel">
+    <h2>Aktiv</h2>
+    <p class="hint">Läuft parallel weiter – abhaken, sobald erledigt oder eingelöst.</p>
+
+    @if (activeStore.activePunishments().length > 0) {
+      <h3 class="effect-heading punishment">Bestrafungen</h3>
+      <ul class="effect-list">
+        @for (entry of activeStore.activePunishments(); track entry.id) {
+          <li class="effect-item">
+            <span>{{ entry.label }}</span>
+            <button
+              type="button"
+              class="btn ghost"
+              title="Erledigt"
+              (click)="resolveEffect(entry.id)"
+            >
+              ✓
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (activeStore.activeRewards().length > 0) {
+      <h3 class="effect-heading reward">Belohnungen</h3>
+      <ul class="effect-list">
+        @for (entry of activeStore.activeRewards(); track entry.id) {
+          <li class="effect-item">
+            <span>{{ entry.label }}</span>
+            <button
+              type="button"
+              class="btn ghost"
+              title="Eingelöst"
+              (click)="resolveEffect(entry.id)"
+            >
+              ✓
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+  }
+
+  @if (showBonusPanel()) {
+  <section class="panel bonus-panel">
+    <h2>Bonus-Challenges</h2>
+    <p class="bonus-count">{{ bonusStore.completedCount() }} / {{ bonusStore.bonusChallenges().length }}</p>
+    <p class="hint">Jederzeit nebenbei erfüllbar – jede geschaffte Bonus-Challenge gibt eine Belohnung.</p>
+    <ul class="bonus-list">
+      @for (bonus of bonusStore.bonusChallenges(); track bonus.id) {
+        <li>
+          <label class="bonus-item" [class.done]="bonus.completed">
+            <input type="checkbox" [checked]="bonus.completed" (change)="toggleBonus(bonus.id)" />
+            <span>{{ bonus.label }}</span>
+          </label>
+        </li>
+      } @empty {
+        <li class="empty">Keine Bonus-Challenges.</li>
+      }
+    </ul>
+  </section>
+  }
+
+  </aside>
   }
 
   @if (outcome(); as result) {
     <div class="overlay" [class.overlay-fail]="result === 'failed'" [class.overlay-success]="result === 'success'">
       <span class="overlay-label">{{ result === 'failed' ? 'Fehlgeschlagen!' : 'Geschafft! 🎉' }}</span>
 
-      <app-wheel
-        [entries]="result === 'failed' ? wheelStore.availablePunishments() : wheelStore.availableRewards()"
-        (spinResult)="onSpinResult(result, $event)"
-      />
+      @if (result === 'failed') {
+        <app-wheel
+          [entries]="wheelStore.availablePunishments()"
+          (spinResult)="onSpinResult($event)"
+        />
 
-      @if (revealedEntry(); as entry) {
-        <p class="reveal-text">{{ entry.label }}</p>
-        @if (result === 'failed') {
+        @if (revealedEntry(); as entry) {
+          <p class="reveal-text">{{ entry.label }}</p>
           <p class="film-reminder">📹 Vergiss nicht zu filmen – für Steffis Video!</p>
+        }
+      } @else {
+        <p class="reveal-text">Keine Bestrafung!</p>
+        <p class="film-reminder">Belohnungen gibt es nur für Bonus-Challenges.</p>
+      }
+
+      <button
+        type="button"
+        class="btn"
+        [disabled]="result === 'failed' && !revealedEntry()"
+        (click)="continueToNext()"
+      >
+        Weiter
+      </button>
+    </div>
+  }
+
+  @if (bonusRewardOpen()) {
+    <div class="overlay overlay-success">
+      <span class="overlay-label">Bonus geschafft! 🎉</span>
+
+      <app-wheel [entries]="wheelStore.availableRewards()" (spinResult)="onBonusRewardSpin($event)" />
+
+      @if (bonusReward(); as reward) {
+        <p class="reveal-text">{{ reward.label }}</p>
+      }
+
+      <button type="button" class="btn" [disabled]="!bonusReward()" (click)="closeBonusReward()">
+        Weiter
+      </button>
+    </div>
+  }
+
+  @if (gateOpen()) {
+    <div class="overlay overlay-gate">
+      <span class="overlay-label">8 League-Challenges geschafft!</span>
+      <p class="gate-question">Wie geht es weiter?</p>
+      <div class="gate-controls">
+        @if (store.hasMoreLeague()) {
+          <button type="button" class="btn primary" (click)="gateContinueLeague()">
+            ⚔️ Weiter mit League
+          </button>
+        }
+        <button type="button" class="btn" (click)="gateSpinForGame()">
+          🎲 Rad für optionale Games drehen
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (gameWheelOpen()) {
+    <div class="overlay overlay-game">
+      <span class="overlay-label">Nächstes Game</span>
+
+      <app-wheel [entries]="wheelStore.availableGames()" (spinResult)="onGameSpinResult($event)" />
+
+      @if (revealedGame(); as game) {
+        <p class="reveal-text">{{ game.label }}</p>
+        @if (drawnGameHasChallenges()) {
+          <p class="film-reminder">Die Challenges dafür landen gleich im Zeitplan.</p>
+        } @else {
+          <p class="film-reminder">Für dieses Game sind keine Challenges hinterlegt.</p>
         }
       }
 
-      <button type="button" class="btn" [disabled]="!revealedEntry()" (click)="continueToNext()">
-        Weiter
-      </button>
+      @if (revealedGame()) {
+        <button type="button" class="btn primary" (click)="startDrawnGame()">Los geht’s</button>
+      } @else {
+        <button type="button" class="btn" (click)="closeGameWheel()">Abbrechen</button>
+      }
     </div>
   }
 </div>

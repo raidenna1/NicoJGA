@@ -28,7 +28,7 @@
             statusLabels[challenge.status]
           }}</span>
           <span class="title">{{ challenge.title }}</span>
-          <span class="mode">{{ modeLabels[challenge.mode] ?? challenge.mode }}</span>
+          <span class="mode">{{ badgeFor(challenge) }}</span>
           @if (challenge.timeLimitMinutes) {
             <span class="time-limit">{{ challenge.timeLimitMinutes }} min</span>
           }

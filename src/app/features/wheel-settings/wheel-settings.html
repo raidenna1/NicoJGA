@@ -74,5 +74,49 @@
       </div>
       <app-wheel [entries]="store.rewards()" />
     </section>
+
+    <section class="pool">
+      <div class="pool-header">
+        <h3>Games</h3>
+        <button type="button" class="btn ghost" (click)="resetGameUsage()">Zurücksetzen</button>
+      </div>
+      <ul>
+        @for (entry of store.games(); track entry.id) {
+          <li>
+            <span>
+              {{ entry.label }}
+              @if (store.isGameUsed(entry.id)) {
+                <span class="used-badge">✓ gespielt</span>
+              }
+            </span>
+            <button type="button" class="btn ghost" (click)="removeGame(entry.id)">Löschen</button>
+          </li>
+        } @empty {
+          <li class="empty">Noch keine Games.</li>
+        }
+      </ul>
+      <div class="add-row">
+        <input
+          type="text"
+          [ngModel]="newGame()"
+          (ngModelChange)="newGame.set($event)"
+          (keydown.enter)="addGame()"
+          placeholder="Neues Game..."
+        />
+        <button type="button" class="btn primary" (click)="addGame()">Hinzufügen</button>
+      </div>
+      <app-wheel [entries]="store.games()" />
+    </section>
   </div>
+
+  <section class="danger-zone">
+    <h3>Standard-Daten</h3>
+    <p class="hint">
+      Lädt Bestrafungen, Belohnungen, Games, Challenges und Bonus-Challenges neu aus den
+      mitgelieferten Listen. Eigene Einträge und der Fortschritt gehen verloren.
+    </p>
+    <button type="button" class="btn danger" (click)="resetEverythingToDefaults()">
+      Alles auf Standard zurücksetzen
+    </button>
+  </section>
 </div>

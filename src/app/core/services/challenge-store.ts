@@ -1,5 +1,12 @@
 import { Service, signal, computed, effect } from '@angular/core';
-import { Challenge, ChallengeDraft, ChallengeMode, HistoryEntry } from '../models/challenge';
+import {
+  Challenge,
+  ChallengeDraft,
+  ChallengeMode,
+  GameKey,
+  HistoryEntry,
+  gameOf,
+} from '../models/challenge';
 
 const VALID_MODES: ChallengeMode[] = ['classic', 'aram', 'scrim', 'normal', 'custom'];
 
@@ -9,60 +16,336 @@ interface PersistedState {
   challenges: Challenge[];
   currentChallengeId: string | null;
   history: HistoryEntry[];
+  // Set once the player has answered the post-League gate, so the dialog does
+  // not reappear on every later reload.
+  gateAnswered: boolean;
+  // Games whose challenges have already been appended, so a repeat spin cannot
+  // add the same set twice.
+  unlockedGames: GameKey[];
 }
 
-const EMPTY_STATE: PersistedState = { challenges: [], currentChallengeId: null, history: [] };
+const EMPTY_STATE: PersistedState = {
+  challenges: [],
+  currentChallengeId: null,
+  history: [],
+  gateAnswered: false,
+  unlockedGames: [],
+};
 
+// After this many resolved League challenges the dashboard asks whether to keep
+// going with League or spin the wheel for an optional game.
+const CORE_LEAGUE_COUNT = 8;
+
+// All 15 League challenges live in the Zeitplan from the start; the gate only
+// interrupts the run after the first CORE_LEAGUE_COUNT of them.
 const SEED_CHALLENGES: ChallengeDraft[] = [
   {
-    title: 'Classic 5v5 – Autofill-Legende',
-    description: 'Gewinnt ein Classic 5v5 mit Nico auf einer Autofill-Rolle (keine Rollentausch-Tricks).',
+    title: 'Autofill',
+    description: 'Nico spielt auf einer Autofill-Rolle – kein Rollentausch, kein Dodge.',
     mode: 'classic',
     timeLimitMinutes: 40,
   },
   {
-    title: 'Classic 5v5 – Jungle-Gott',
-    description: 'Nico spielt Jungler und gewinnt mit mindestens 6 Kills+Assists aus Gank-Situationen.',
+    title: 'Kein Flash',
+    description: 'Nico spielt das gesamte Game ohne Flash zu benutzen.',
     mode: 'classic',
     timeLimitMinutes: 40,
   },
   {
-    title: 'Scrim 1 – Perfect Game',
-    description: 'Team gewinnt den Scrim, ohne dass Nico auch nur einmal stirbt (0 Deaths).',
+    title: 'Max. 5 Deaths für Nico',
+    description: 'Nico stirbt im Scrim höchstens 5 Mal.',
     mode: 'scrim',
     timeLimitMinutes: 35,
   },
   {
-    title: 'Scrim 2 – Wunschgegner-Ban',
-    description: 'Die Freunde bannen vorher einen Champion für Nico – trotzdem gewinnen.',
+    title: 'Einäugig',
+    description: 'Nico spielt den Scrim mit Augenklappe – nur ein Auge.',
     mode: 'scrim',
     timeLimitMinutes: 35,
   },
   {
-    title: 'Scrim 3 – Comeback-Sieg',
-    description: 'Das Team liegt zwischenzeitlich mit 5+ Kills zurück und dreht die Partie trotzdem zum Sieg.',
+    title: 'Nico 0 Deaths + Sieg',
+    description: 'Das Team gewinnt und Nico stirbt kein einziges Mal.',
+    mode: 'classic',
+    timeLimitMinutes: 40,
+  },
+  {
+    title: 'Scrim Game mit Nico draft only',
+    description: 'Nico bestimmt den kompletten Draft – und muss damit gewinnen.',
     mode: 'scrim',
     timeLimitMinutes: 35,
   },
   {
-    title: 'ARAM 1 – Ohne Flucht',
-    description: 'Gewinnt ein ARAM, ohne dass Nico einmal Zünder (Flash) benutzt.',
-    mode: 'aram',
-    timeLimitMinutes: 25,
+    title: 'Champions mit 0 Wins',
+    description: 'Nico spielt einen Champion, auf dem er noch keinen einzigen Sieg hat.',
+    mode: 'classic',
+    timeLimitMinutes: 40,
   },
   {
-    title: 'ARAM 2 – Poro-König',
-    description: 'Gewinnt ein ARAM, bei dem Nico die höchste Kill-Participation im Team hat.',
-    mode: 'aram',
-    timeLimitMinutes: 25,
+    title: 'Post-its auf dem Bildschirm',
+    description: 'Die untere Bildschirmhälfte wird mit Post-its abgeklebt.',
+    mode: 'classic',
+    timeLimitMinutes: 40,
+  },
+
+  // --- Ab hier: nach dem Gate-Dialog ("Weiter mit League?") ---
+  {
+    title: 'Locked Camera',
+    description: 'Nico spielt das gesamte Game mit gesperrter Kamera.',
+    mode: 'classic',
+    timeLimitMinutes: 40,
   },
   {
-    title: 'Normal – 3 Wins mit Autofill',
-    description: '3 gewonnene Normal-Spiele in Folge, jeweils mit Autofill-Rolle.',
-    mode: 'normal',
+    title: 'Kein Voice, nur Pings',
+    description: 'Nico darf im Scrim nicht sprechen – Kommunikation ausschließlich über Pings.',
+    mode: 'scrim',
+    timeLimitMinutes: 35,
+  },
+  {
+    title: 'Bis Level 6 nur Q',
+    description: 'Nico skillt bis Level 6 ausschließlich seine Q-Fähigkeit.',
+    mode: 'classic',
+    timeLimitMinutes: 40,
+  },
+  {
+    title: 'Nico Pentakill',
+    description: 'Nico landet einen Pentakill.',
+    mode: 'classic',
     timeLimitMinutes: null,
   },
+  {
+    title: 'Bronze Bravery',
+    description:
+      'Zufälliges Build/Setup von bronze-bravery.com – eventuell mit 1-3 Rerolls. https://bronze-bravery.com',
+    mode: 'classic',
+    timeLimitMinutes: 40,
+  },
+  {
+    title: 'Team-Challenge von den Tokens',
+    description:
+      'Eine Team-Challenge aus den Tokens ziehen, z.B. "win games with 3 or more champions with a stealth".',
+    mode: 'classic',
+    timeLimitMinutes: null,
+  },
+  {
+    title: 'WASD-Steuerung',
+    description: 'Nico steuert seinen Champion per WASD statt per Rechtsklick.',
+    mode: 'classic',
+    timeLimitMinutes: 40,
+  },
 ];
+
+// Appended to the Zeitplan when the games wheel lands on that game.
+const GAME_CHALLENGES: Record<Exclude<GameKey, 'league'>, ChallengeDraft[]> = {
+  cs2: [
+    {
+      title: 'Nur Pistolen',
+      description: 'Nico darf das ganze Match über ausschließlich Pistolen kaufen.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Messer-Kill',
+      description: 'Nico muss mindestens einen Kill mit dem Messer landen.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Blind eingekauft',
+      description: 'Das Team kauft für Nico ein – er spielt mit dem, was er bekommt.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Kein Fadenkreuz',
+      description: 'Fadenkreuz in den Settings ausschalten und so eine Runde spielen.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+  geoguessr: [
+    {
+      title: 'Richtiges Land',
+      description: 'Nico errät in 3 von 5 Runden das richtige Land.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'NMPZ',
+      description: 'Kein Bewegen, kein Drehen, kein Zoomen – nur das Startbild.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: '10-Sekunden-Runde',
+      description: 'Nico hat pro Runde nur 10 Sekunden Zeit für seinen Guess.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: '4.000+ Punkte',
+      description: 'Nico landet in einer einzelnen Runde über 4.000 Punkte.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+  golf: [
+    {
+      title: 'Hole-in-One',
+      description: 'Nico spielt mindestens ein Hole-in-One.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Unter Par',
+      description: 'Nico beendet einen kompletten Kurs unter Par.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Invertierte Maus',
+      description: 'Nico spielt einen ganzen Kurs mit invertierter Steuerung.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Letzter trinkt',
+      description: 'Wer den Kurs als Letzter beendet, trinkt.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+  horror: [
+    {
+      title: 'Kein Schreien',
+      description: 'Nico darf nicht schreien – das Mikro läuft mit.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Solo voraus',
+      description: 'Nico geht als Erster und allein rein.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Licht aus',
+      description: 'Gespielt wird im komplett abgedunkelten Raum.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Kopfhörer laut',
+      description: 'Nico spielt mit Kopfhörern auf voller Lautstärke.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+  valorant: [
+    {
+      title: 'Nur Classic',
+      description: 'Nico kauft das ganze Match über nur die Standard-Pistole.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Kein Ult',
+      description: 'Nico darf sein Ultimate kein einziges Mal zünden.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: '3K in einer Runde',
+      description: 'Nico holt drei Kills in einer einzigen Runde.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Nur Schleichen',
+      description: 'Nico bewegt sich eine Runde lang ausschließlich im Schleichmodus.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+  fallguys: [
+    {
+      title: 'Krone holen',
+      description: 'Nico gewinnt eine komplette Show.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Ins Finale',
+      description: 'Nico erreicht das Finale einer Show.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Invertierte Steuerung',
+      description: 'Nico spielt eine ganze Show mit invertierter Steuerung.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Erster raus trinkt',
+      description: 'Wer als Erster ausscheidet, trinkt.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+  minecraft: [
+    {
+      title: 'Diamanten in 15 Minuten',
+      description: 'Nico findet innerhalb von 15 Minuten Diamanten.',
+      mode: 'custom',
+      timeLimitMinutes: 15,
+    },
+    {
+      title: 'Nether-Portal',
+      description: 'Das Team baut gemeinsam ein funktionierendes Nether-Portal.',
+      mode: 'custom',
+      timeLimitMinutes: 20,
+    },
+    {
+      title: 'Kein Springen',
+      description: 'Nico darf die Leertaste nicht benutzen.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Keine Tode',
+      description: 'Nico überlebt die gesamte Session ohne einmal zu sterben.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+  warzone: [
+    {
+      title: 'Gulag gewinnen',
+      description: 'Nico gewinnt sein Gulag-Duell.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: '5 Kills',
+      description: 'Nico holt 5 Kills in einem einzigen Match.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Start-Loadout',
+      description: 'Nico behält seine Startwaffe – kein Loadout-Drop.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+    {
+      title: 'Nur Pistole',
+      description: 'Nico nutzt bis zu seinem ersten Kill ausschließlich die Pistole.',
+      mode: 'custom',
+      timeLimitMinutes: null,
+    },
+  ],
+};
 
 function loadState(): { state: PersistedState; isFirstRun: boolean } {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -76,6 +359,8 @@ function loadState(): { state: PersistedState; isFirstRun: boolean } {
         challenges: parsed.challenges ?? [],
         currentChallengeId: parsed.currentChallengeId ?? null,
         history: parsed.history ?? [],
+        gateAnswered: parsed.gateAnswered ?? false,
+        unlockedGames: parsed.unlockedGames ?? [],
       },
       isFirstRun: false,
     };
@@ -89,7 +374,12 @@ function generateId(): string {
 }
 
 function seedChallenges(): Challenge[] {
-  return SEED_CHALLENGES.map((draft) => ({ ...draft, id: generateId(), status: 'pending' }));
+  return SEED_CHALLENGES.map((draft) => ({
+    ...draft,
+    game: 'league' as GameKey,
+    id: generateId(),
+    status: 'pending',
+  }));
 }
 
 @Service()
@@ -101,6 +391,8 @@ export class ChallengeStore {
   );
   readonly currentChallengeId = signal<string | null>(this.loaded.state.currentChallengeId);
   readonly history = signal<HistoryEntry[]>(this.loaded.state.history);
+  readonly gateAnswered = signal<boolean>(this.loaded.state.gateAnswered);
+  readonly unlockedGames = signal<GameKey[]>(this.loaded.state.unlockedGames);
 
   readonly currentChallenge = computed(
     () => this.challenges().find((c) => c.id === this.currentChallengeId()) ?? null,
@@ -110,15 +402,69 @@ export class ChallengeStore {
     this.challenges().filter((c) => c.status === 'pending'),
   );
 
+  private readonly resolvedLeagueCount = computed(
+    () =>
+      this.challenges().filter(
+        (c) => gameOf(c) === 'league' && (c.status === 'success' || c.status === 'failed'),
+      ).length,
+  );
+
+  readonly hasMoreLeague = computed(() =>
+    this.challenges().some((c) => gameOf(c) === 'league' && c.status === 'pending'),
+  );
+
+  // True exactly once: the first 8 League challenges are done and the player
+  // has not yet chosen between more League and spinning for a game.
+  readonly gateDue = computed(
+    () => !this.gateAnswered() && this.resolvedLeagueCount() >= CORE_LEAGUE_COUNT,
+  );
+
   constructor() {
     effect(() => {
       const state: PersistedState = {
         challenges: this.challenges(),
         currentChallengeId: this.currentChallengeId(),
         history: this.history(),
+        gateAnswered: this.gateAnswered(),
+        unlockedGames: this.unlockedGames(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     });
+  }
+
+  answerGate(): void {
+    this.gateAnswered.set(true);
+  }
+
+  // Appends the challenge set for a game to the Zeitplan and starts the first
+  // of them. A game already unlocked is not added a second time.
+  unlockGame(game: GameKey): void {
+    this.gateAnswered.set(true);
+    if (game === 'league' || this.unlockedGames().includes(game)) {
+      return;
+    }
+    const drafts = GAME_CHALLENGES[game];
+    if (!drafts) {
+      return;
+    }
+    const added: Challenge[] = drafts.map((draft) => ({
+      ...draft,
+      game,
+      id: generateId(),
+      status: 'pending',
+    }));
+    this.challenges.update((list) => [...list, ...added]);
+    this.unlockedGames.update((list) => [...list, game]);
+    this.setCurrent(added[0].id);
+  }
+
+  // Discards all challenge state and re-seeds from SEED_CHALLENGES.
+  resetToDefaults(): void {
+    this.challenges.set(seedChallenges());
+    this.currentChallengeId.set(null);
+    this.history.set([]);
+    this.gateAnswered.set(false);
+    this.unlockedGames.set([]);
   }
 
   addChallenge(draft: ChallengeDraft): void {
@@ -193,8 +539,15 @@ export class ChallengeStore {
   }
 
   advanceToNext(): void {
+    const previous = this.currentChallenge();
+    const previousGame = previous ? gameOf(previous) : null;
     this.currentChallengeId.set(null);
-    const next = this.pendingChallenges()[0];
+    const pending = this.pendingChallenges();
+    // Finish the current game's set before falling back to whatever is next in
+    // the list - otherwise a drawn game would bounce back to League after one
+    // challenge, since the remaining League entries sit earlier in the array.
+    const sameGame = previousGame ? pending.find((c) => gameOf(c) === previousGame) : undefined;
+    const next = sameGame ?? pending[0];
     if (next) {
       this.setCurrent(next.id);
     }
