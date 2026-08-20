@@ -1,0 +1,159 @@
+:host {
+  display: flex;
+  height: 100%;
+}
+
+.dashboard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.challenge-card {
+  width: min(700px, 100%);
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.mode-badge {
+  display: inline-block;
+  padding: 0.25rem 1rem;
+  border-radius: 999px;
+  background: rgba(10, 200, 185, 0.15);
+  color: var(--color-teal);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  margin: 1rem 0 0.5rem;
+  color: var(--color-gold-bright);
+}
+
+.description {
+  color: var(--color-text-muted);
+  font-size: 1.15rem;
+  margin-bottom: 1.5rem;
+}
+
+.no-timer {
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.timer {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(3.5rem, 12vw, 6rem);
+  font-weight: 700;
+  color: var(--color-gold-bright);
+  margin: 1rem 0;
+  transition: color 0.3s ease;
+}
+
+.timer.expired {
+  color: var(--color-danger);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.timer-controls {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.result-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+}
+
+.empty-state .hint {
+  font-size: 1rem;
+}
+
+.empty-state .btn {
+  margin-top: 1rem;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  animation: fade-in 0.25s ease;
+}
+
+.overlay-fail {
+  background: radial-gradient(circle at center, #3a0f0a 0%, #150403 80%);
+}
+
+.overlay-success {
+  background: radial-gradient(circle at center, #0f3a1f 0%, #041505 80%);
+}
+
+.overlay-label {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 800;
+}
+
+.overlay-fail .overlay-label {
+  color: var(--color-danger);
+}
+
+.overlay-success .overlay-label {
+  color: var(--color-success);
+}
+
+.reveal-text {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  max-width: 40rem;
+  color: var(--color-gold-bright);
+}
+
+.film-reminder {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

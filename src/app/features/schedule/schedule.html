@@ -1,0 +1,75 @@
+<div class="schedule">
+  <header>
+    <h2>Zeitplan</h2>
+    <div class="header-actions">
+      <button type="button" class="btn ghost" (click)="resetProgress()">Zurücksetzen</button>
+      <button type="button" class="btn ghost" (click)="exportChallenges()">Exportieren</button>
+      <button type="button" class="btn ghost" (click)="fileInput.click()">Importieren</button>
+      <input
+        #fileInput
+        type="file"
+        accept="application/json"
+        hidden
+        (change)="importChallenges($event)"
+      />
+      <button type="button" class="btn primary" (click)="openCreate()">+ Neue Challenge</button>
+    </div>
+  </header>
+
+  <ul class="challenge-list">
+    @for (challenge of store.challenges(); track challenge.id; let first = $first; let last = $last) {
+      <li class="challenge-row" [class.is-active]="challenge.status === 'active'">
+        <div class="reorder">
+          <button type="button" class="icon-btn" [disabled]="first" (click)="moveUp(challenge)">▲</button>
+          <button type="button" class="icon-btn" [disabled]="last" (click)="moveDown(challenge)">▼</button>
+        </div>
+        <div class="info">
+          <span class="status-badge" [attr.data-status]="challenge.status">{{
+            statusLabels[challenge.status]
+          }}</span>
+          <span class="title">{{ challenge.title }}</span>
+          <span class="mode">{{ modeLabels[challenge.mode] ?? challenge.mode }}</span>
+          @if (challenge.timeLimitMinutes) {
+            <span class="time-limit">{{ challenge.timeLimitMinutes }} min</span>
+          }
+        </div>
+        <div class="actions">
+          @if (challenge.status === 'pending') {
+            <button type="button" class="btn primary" (click)="setCurrent(challenge)">
+              Als aktuell setzen
+            </button>
+          }
+          <button type="button" class="btn ghost" (click)="openEdit(challenge)">Bearbeiten</button>
+          <button type="button" class="btn ghost" (click)="remove(challenge)">Löschen</button>
+        </div>
+      </li>
+    } @empty {
+      <li class="empty">Noch keine Challenges angelegt.</li>
+    }
+  </ul>
+
+  @if (store.history().length > 0) {
+    <section class="history">
+      <h3>Verlauf</h3>
+      <ul>
+        @for (entry of store.history(); track entry.timestamp) {
+          <li>
+            <span class="history-icon" [class.fail]="entry.result === 'failed'">{{
+              entry.result === 'success' ? '✅' : '❌'
+            }}</span>
+            <span class="history-title">{{ entry.title }}</span>
+            <span class="history-time">{{ formatTimestamp(entry.timestamp) }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>
+
+@if (editorOpen()) {
+  <app-challenge-editor
+    [challenge]="editingChallenge()"
+    (save)="handleSave($event)"
+    (cancel)="closeEditor()"
+  />
+}

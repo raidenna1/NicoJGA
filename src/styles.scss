@@ -1,0 +1,92 @@
+:root {
+  --color-bg: #0a1428;
+  --color-bg-panel: #1e2328;
+  --color-bg-panel-raised: #2a2f36;
+  --color-border: #3c3c41;
+  --color-gold: #c8aa6e;
+  --color-gold-bright: #f0e6d2;
+  --color-teal: #0ac8b9;
+  --color-success: #2ecc71;
+  --color-danger: #e0473a;
+  --color-text: #f0e6d2;
+  --color-text-muted: #a09b8c;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at top, #10203a 0%, var(--color-bg) 60%);
+  color: var(--color-text);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  user-select: none;
+}
+
+app-root {
+  display: block;
+  height: 100dvh;
+}
+
+button {
+  font-family: inherit;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-panel-raised);
+  color: var(--color-text);
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-gold);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn.primary {
+  background: linear-gradient(180deg, var(--color-teal), #086f66);
+  border-color: var(--color-teal);
+  color: #06221f;
+}
+
+.btn.success {
+  background: linear-gradient(180deg, var(--color-success), #1f9c53);
+  border-color: var(--color-success);
+  color: #06210f;
+}
+
+.btn.danger {
+  background: linear-gradient(180deg, var(--color-danger), #a8291f);
+  border-color: var(--color-danger);
+  color: #2a0704;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}

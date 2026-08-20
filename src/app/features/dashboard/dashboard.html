@@ -1,0 +1,70 @@
+<div class="dashboard">
+  @if (current(); as challenge) {
+    <div class="challenge-card">
+      <span class="mode-badge">{{ modeLabel() }}</span>
+      <h1>{{ challenge.title }}</h1>
+      @if (challenge.description) {
+        <p class="description">{{ challenge.description }}</p>
+      }
+
+      @if (challenge.timeLimitMinutes) {
+        <div class="timer" [class.expired]="timer.expired()">
+          {{ formatTime(minutes()) }}:{{ formatTime(seconds()) }}
+        </div>
+        <div class="timer-controls">
+          @if (timerNotStarted()) {
+            <button type="button" class="btn primary" (click)="startTimer()">Timer starten</button>
+          }
+          @if (timer.isRunning()) {
+            <button type="button" class="btn" (click)="pauseTimer()">Pause</button>
+          }
+          @if (timerResumable()) {
+            <button type="button" class="btn" (click)="resumeTimer()">Fortsetzen</button>
+          }
+          @if (timerActive()) {
+            <button type="button" class="btn ghost" (click)="resetTimer()">Reset</button>
+          }
+        </div>
+      } @else {
+        <p class="no-timer">Kein Zeitlimit für diese Challenge</p>
+      }
+
+      <div class="result-controls">
+        <button type="button" class="btn success" (click)="markResult('success')">✅ Erfolg</button>
+        <button type="button" class="btn danger" (click)="markResult('failed')">❌ Fehlgeschlagen</button>
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state">
+      @if (hasUpcoming()) {
+        <p>Keine aktive Challenge.</p>
+        <button type="button" class="btn primary" (click)="startNext()">Nächste Challenge starten</button>
+      } @else {
+        <p>🎉 Alle Challenges gespielt!</p>
+        <p class="hint">Neue Challenge im Zeitplan-Tab anlegen.</p>
+      }
+    </div>
+  }
+
+  @if (outcome(); as result) {
+    <div class="overlay" [class.overlay-fail]="result === 'failed'" [class.overlay-success]="result === 'success'">
+      <span class="overlay-label">{{ result === 'failed' ? 'Fehlgeschlagen!' : 'Geschafft! 🎉' }}</span>
+
+      <app-wheel
+        [entries]="result === 'failed' ? wheelStore.availablePunishments() : wheelStore.availableRewards()"
+        (spinResult)="onSpinResult(result, $event)"
+      />
+
+      @if (revealedEntry(); as entry) {
+        <p class="reveal-text">{{ entry.label }}</p>
+        @if (result === 'failed') {
+          <p class="film-reminder">📹 Vergiss nicht zu filmen – für Steffis Video!</p>
+        }
+      }
+
+      <button type="button" class="btn" [disabled]="!revealedEntry()" (click)="continueToNext()">
+        Weiter
+      </button>
+    </div>
+  }
+</div>

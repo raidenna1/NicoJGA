@@ -1,0 +1,23 @@
+<div class="wheel-container">
+  @if (entries().length === 0) {
+    <p class="empty-pool">Keine Einträge im Rad – bitte im Tab "Rad" welche hinzufügen.</p>
+  } @else {
+    <div class="wheel-stage">
+      <div class="wheel-pointer"></div>
+      <div
+        class="wheel-disc"
+        [style.background]="conicGradient()"
+        [style.transform]="'rotate(' + rotation() + 'deg)'"
+      >
+        @for (seg of segments(); track seg.entry.id) {
+          <div class="wheel-label" [style.transform]="'rotate(' + (seg.mid - 90) + 'deg)'">
+            <span>{{ seg.entry.label }}</span>
+          </div>
+        }
+      </div>
+    </div>
+    <button type="button" class="btn primary spin-btn" [disabled]="spinning()" (click)="spin()">
+      {{ spinning() ? 'Dreht sich...' : '🎡 Rad drehen' }}
+    </button>
+  }
+</div>

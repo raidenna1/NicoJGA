@@ -1,0 +1,78 @@
+<div class="wheel-settings">
+  <h2>Rad-Verwaltung</h2>
+  <p class="hint">
+    Bestrafungen und Belohnungen, aus denen im Dashboard nach Erfolg/Fehlschlag gedreht wird.
+  </p>
+
+  <div class="pools">
+    <section class="pool">
+      <div class="pool-header">
+        <h3>Bestrafungen</h3>
+        <button type="button" class="btn ghost" (click)="resetPunishmentUsage()">
+          Zurücksetzen
+        </button>
+      </div>
+      <ul>
+        @for (entry of store.punishments(); track entry.id) {
+          <li>
+            <span>
+              {{ entry.label }}
+              @if (store.isPunishmentUsed(entry.id)) {
+                <span class="used-badge">✓ genutzt</span>
+              }
+            </span>
+            <button type="button" class="btn ghost" (click)="removePunishment(entry.id)">
+              Löschen
+            </button>
+          </li>
+        } @empty {
+          <li class="empty">Noch keine Bestrafungen.</li>
+        }
+      </ul>
+      <div class="add-row">
+        <input
+          type="text"
+          [ngModel]="newPunishment()"
+          (ngModelChange)="newPunishment.set($event)"
+          (keydown.enter)="addPunishment()"
+          placeholder="Neue Bestrafung..."
+        />
+        <button type="button" class="btn primary" (click)="addPunishment()">Hinzufügen</button>
+      </div>
+      <app-wheel [entries]="store.punishments()" />
+    </section>
+
+    <section class="pool">
+      <div class="pool-header">
+        <h3>Belohnungen</h3>
+        <button type="button" class="btn ghost" (click)="resetRewardUsage()">Zurücksetzen</button>
+      </div>
+      <ul>
+        @for (entry of store.rewards(); track entry.id) {
+          <li>
+            <span>
+              {{ entry.label }}
+              @if (store.isRewardUsed(entry.id)) {
+                <span class="used-badge">✓ genutzt</span>
+              }
+            </span>
+            <button type="button" class="btn ghost" (click)="removeReward(entry.id)">Löschen</button>
+          </li>
+        } @empty {
+          <li class="empty">Noch keine Belohnungen.</li>
+        }
+      </ul>
+      <div class="add-row">
+        <input
+          type="text"
+          [ngModel]="newReward()"
+          (ngModelChange)="newReward.set($event)"
+          (keydown.enter)="addReward()"
+          placeholder="Neue Belohnung..."
+        />
+        <button type="button" class="btn primary" (click)="addReward()">Hinzufügen</button>
+      </div>
+      <app-wheel [entries]="store.rewards()" />
+    </section>
+  </div>
+</div>

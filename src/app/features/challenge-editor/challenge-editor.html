@@ -1,0 +1,60 @@
+<div class="backdrop" (click)="cancel.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h2>{{ isEdit() ? 'Challenge bearbeiten' : 'Neue Challenge' }}</h2>
+
+    <label>
+      Titel
+      <input
+        type="text"
+        [ngModel]="title()"
+        (ngModelChange)="title.set($event)"
+        placeholder="z.B. 3 Wins mit Autofill"
+      />
+    </label>
+
+    <label>
+      Beschreibung
+      <textarea
+        rows="2"
+        [ngModel]="description()"
+        (ngModelChange)="description.set($event)"
+        placeholder="Optionale Regeln/Details"
+      ></textarea>
+    </label>
+
+    <label>
+      Modus
+      <select [ngModel]="mode()" (ngModelChange)="mode.set($event)">
+        <option value="classic">Classic 5v5</option>
+        <option value="aram">ARAM</option>
+        <option value="scrim">Scrim</option>
+        <option value="normal">Normal</option>
+        <option value="custom">Eigener Modus</option>
+      </select>
+    </label>
+
+    <label class="checkbox">
+      <input type="checkbox" [ngModel]="hasTimeLimit()" (ngModelChange)="toggleTimeLimit($event)" />
+      Mit Zeitlimit
+    </label>
+
+    @if (hasTimeLimit()) {
+      <label>
+        Zeitlimit (Minuten)
+        <input
+          type="number"
+          min="1"
+          [ngModel]="timeLimitMinutes()"
+          (ngModelChange)="timeLimitMinutes.set($event)"
+        />
+      </label>
+    }
+
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" (click)="cancel.emit()">Abbrechen</button>
+      <button type="button" class="btn primary" [disabled]="!title().trim()" (click)="submit()">
+        Speichern
+      </button>
+    </div>
+  </div>
+</div>

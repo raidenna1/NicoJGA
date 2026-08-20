@@ -1,0 +1,176 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.schedule {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+h2 {
+  margin: 0;
+  color: var(--color-gold-bright);
+}
+
+.challenge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.challenge-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.challenge-row.is-active {
+  border-color: var(--color-teal);
+}
+
+.reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.icon-btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border-radius: 0.35rem;
+  width: 1.75rem;
+  height: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.mode,
+.time-limit {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(160, 155, 140, 0.15);
+  color: var(--color-text-muted);
+}
+
+.status-badge[data-status='active'] {
+  background: rgba(10, 200, 185, 0.15);
+  color: var(--color-teal);
+}
+
+.status-badge[data-status='success'] {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--color-success);
+}
+
+.status-badge[data-status='failed'] {
+  background: rgba(224, 71, 58, 0.15);
+  color: var(--color-danger);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.actions .btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 2rem 0;
+  list-style: none;
+}
+
+.history {
+  margin-top: 2.5rem;
+}
+
+.history h3 {
+  color: var(--color-gold-bright);
+}
+
+.history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.history li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-panel);
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.history-title {
+  flex: 1;
+}
+
+.history-time {
+  color: var(--color-text-muted);
+}

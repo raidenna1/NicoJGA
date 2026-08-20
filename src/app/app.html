@@ -1,0 +1,54 @@
+@if (showIntro()) {
+  <app-intro (start)="dismissIntro()" />
+} @else {
+  <div class="app-shell">
+    <nav class="tabs">
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'dashboard'"
+        (click)="setTab('dashboard')"
+      >
+        Dashboard
+      </button>
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'schedule'"
+        (click)="setTab('schedule')"
+      >
+        Zeitplan
+      </button>
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'wheel'"
+        (click)="setTab('wheel')"
+      >
+        Rad
+      </button>
+      <button
+        type="button"
+        class="fullscreen-btn"
+        (click)="toggleFullscreen()"
+        [attr.aria-label]="isFullscreen() ? 'Vollbild beenden' : 'Vollbild'"
+      >
+        {{ isFullscreen() ? '⤡' : '⤢' }}
+      </button>
+    </nav>
+
+    <main class="content">
+      @switch (activeTab()) {
+        @case ('dashboard') {
+          <app-dashboard />
+        }
+        @case ('schedule') {
+          <app-schedule />
+        }
+        @case ('wheel') {
+          <app-wheel-settings />
+        }
+      }
+    </main>
+  </div>
+}
