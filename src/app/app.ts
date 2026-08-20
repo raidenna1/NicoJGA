@@ -35,7 +35,7 @@ export class App {
   protected dismissIntro(): void {
     sessionStorage.setItem(INTRO_SESSION_KEY, 'true');
     this.showIntro.set(false);
-    this.activeTab.set('schedule');
+    this.activeTab.set('dashboard');
     if (this.forcedIntro) {
       const url = new URL(window.location.href);
       url.searchParams.delete(INTRO_PARAM);
